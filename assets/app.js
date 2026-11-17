@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=7';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=8';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -42,13 +42,26 @@ async function handleFiles(files) {
   let got = [];
   for (const f of files) {
     try { got = got.concat(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? await readPdf(f) : await readSheet(f)); }
-    catch (e) { console.warn(e); status(`Couldn't read "${f.name}". Try the Excel/CSV version of your statement.`, true); }
+    catch (e) { console.warn(e); if (/password/i.test(String(e && e.name) + e)) { status('That PDF needs its password to open. Try again and enter it.', true); return; } }
   }
   if (DEMO) { TX = []; DEMO = false; }
   addTx(got);
-  if (!TX.some(t => t.dir === 'out')) { status('No payments found in that file. Try your bank\'s Excel/CSV statement, or send us the format on Instagram @maddiee.makess.', true); return; }
-  status(''); run();
+  if (!TX.some(t => t.dir === 'out')) { status("We couldn't find payments in that file.", true); helpBox(files, got.length); count('read-fail'); return; }
+  status(''); count('read-ok'); run();
 }
+function helpBox(files, n) {
+  const f = files[0] || { name: '', size: 0 }, kind = (f.name.split('.').pop() || '').toUpperCase();
+  const box = $('#help'); box.hidden = false;
+  box.innerHTML = `<h3>Didn't read your file?</h3>
+    <p>Every bank lays out its statement differently. Tell us which one you used and we'll add it, usually within a day. <b>Don't send the file</b>, only these details.</p>
+    <label>Statement from <select id="hb-bank"><option>PhonePe</option><option>SBI</option><option>HDFC</option><option>ICICI</option><option>Axis</option><option>Kotak</option><option>Union Bank</option><option>Canara</option><option>Bank of Baroda</option><option>PNB</option><option>Paytm</option><option>Other</option></select></label>
+    <div class="btns"><button id="hb-copy">Copy details</button><a class="alt btnlike" href="https://ig.me/m/maddiee.makess" target="_blank" rel="noopener">Open Instagram DM</a></div>
+    <p class="note" id="hb-msg">Tip: most banks also give an <b>Excel/CSV</b> statement. That one almost always works.</p>`;
+  $('#hb-copy').onclick = async () => { const t = `PaisaMap couldn't read my statement. Bank/app: ${$('#hb-bank').value}. File type: ${kind}. Size: ${Math.round(f.size / 1024)} KB. Rows found: ${n}.`;
+    try { await navigator.clipboard.writeText(t); $('#hb-msg').textContent = 'Copied. Paste it in our Instagram DM.'; } catch { $('#hb-msg').textContent = t; } };
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function count(name) { try { window.goatcounter && window.goatcounter.count && window.goatcounter.count({ path: 'event/' + name, title: name, event: true }); } catch {} }
 function status(msg, bad) { const el = $('#status'); el.textContent = msg; el.className = bad ? 'status bad' : 'status'; $('#drop').classList.toggle('busy', !!msg && !bad); }
 
 // ---------------------------------------------------------------- render
@@ -107,9 +120,14 @@ function render() {
     <p class="note">Suggested monthly budget: <b>${inr(Math.round(r.budget / 500) * 500)}</b> (you average ${inr(r.avgMonth)}).</p>
   </section>
 
+  <section class="card roast"><h3>🔥 Roast my spending</h3>
+    ${R.roast.map((l, i) => `<p class="rl" style="--i:${i}">${esc(l)}</p>`).join('')}
+  </section>
+
   <section class="card persona"><p class="kicker">Your money personality</p><p class="emo">${r.personality.emoji}</p><h3>${r.personality.name}</h3><p class="note">${r.personality.line}</p></section>
 
-  <section class="card"><h3>📲 Share your card</h3><p class="note">A summary card for your story. Only totals, no names.</p>
+  <section class="card"><h3>📲 Share your card</h3><p class="note">For your story. No names and no account details.</p>
+    <div class="seg" role="tablist">${[['sum', 'Summary'], ['roast', 'Roast'], ['me', 'Personality']].map(([k, l]) => `<button role="tab" data-d="${k}" class="${k === design ? 'on' : ''}">${l}</button>`).join('')}</div>
     <canvas id="share" width="1080" height="1920"></canvas>
     <div class="btns"><button id="dl">Download</button><button id="sh" class="alt">Share</button></div></section>
 
@@ -119,32 +137,51 @@ function render() {
   <p class="foot">Read on your phone only. Nothing was uploaded. Categories are a best guess from payment names. Not financial advice.</p>`;
   document.querySelectorAll('.reg select').forEach(s => s.onchange = () => { tags[s.dataset.name] = s.value; store.set('pm_tags', tags); run(); });
   drawCard(); $('#dl').onclick = download; $('#sh').onclick = share; wireTracker();
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { design = b.dataset.d; document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); drawCard(); });
   $('#wipe').onclick = () => { if (!confirm('Reset your monthly limits and shop labels on this phone?')) return; ['pm_tags', 'pm_limits'].forEach(k => localStorage.removeItem(k)); TX = []; tags = {}; limits = { total: 0, cats: {} }; R = null; $('#result').hidden = true; $('#home').hidden = false; };
 }
 
 // ---------------------------------------------------------------- share card
+let design = 'sum';
+function wrapText(x, text, maxW) { const words = text.split(' '), out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawCard() {
-  const c = $('#share'), x = c.getContext('2d'), r = R;
-  const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, '#0e2a47'); g.addColorStop(0.6, '#17436b'); g.addColorStop(1, '#1f6f6b'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
-  const t = (s, X, Y, size, col = '#fff', w = 800, al = 'center') => { x.font = `${w} ${size}px system-ui, -apple-system, "Segoe UI", sans-serif`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
-  t('🧾 PaisaMap', 540, 170, 64); t(`my ${r.last.getFullYear()} money`, 540, 250, 40, 'rgba(255,255,255,0.8)', 600);
-  x.fillStyle = 'rgba(8,10,35,0.55)'; x.beginPath(); x.roundRect(90, 330, 900, 1150, 50); x.fill();
-  t('I spent', 540, 430, 44, 'rgba(255,255,255,0.75)', 600); t(inr(r.spent), 540, 530, 120, '#f4b400', 900);
-  const rows = [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']];
-  rows.forEach(([a, b], i) => { const Y = 700 + i * 150; t(a, 160, Y, 40, 'rgba(255,255,255,0.7)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#4fd1a5' : '#fff', 800, 'right'); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(160, Y + 60, 760, 2); });
-  t(r.personality.emoji, 540, 1340, 90); t(r.personality.name, 540, 1430, 56, '#fff', 900);
-  t('find yours at paisamap.online', 540, 1620, 44, '#fff', 800); t('@maddiee.makess', 540, 1700, 36, 'rgba(255,255,255,0.8)', 600);
+  const c = $('#share'), x = c.getContext('2d'), r = R, F = '"Bricolage", system-ui, sans-serif';
+  const t = (s, X, Y, size, col = '#fff', w = 800, al = 'center') => { x.font = `${w} ${size}px ${F}`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
+  const bg = (a, b) => { const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
+    x.strokeStyle = 'rgba(159,182,198,0.10)'; x.lineWidth = 2; for (let i = 0; i <= 1080; i += 72) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 1920); x.stroke(); } for (let j = 0; j <= 1920; j += 72) { x.beginPath(); x.moveTo(0, j); x.lineTo(1080, j); x.stroke(); }
+    x.setLineDash([8, 30]); x.lineCap = 'round'; x.strokeStyle = 'rgba(244,180,0,0.55)'; x.lineWidth = 10; x.beginPath(); x.moveTo(-40, 1560); x.bezierCurveTo(260, 1380, 420, 1720, 640, 1560); x.bezierCurveTo(820, 1430, 900, 1600, 1120, 1480); x.stroke(); x.setLineDash([]); };
+  const head = sub => { t('📍 PaisaMap', 540, 150, 60); t(sub, 540, 225, 38, 'rgba(232,241,242,0.75)', 600); };
+  const foot = () => { t('find yours at paisamap.online', 540, 1760, 44, '#fff', 800); t('@maddiee.makess', 540, 1830, 34, 'rgba(232,241,242,0.75)', 600); };
+  if (design === 'sum') {
+    bg('#0e2a47', '#1f6f6b'); head(`my money, ${MN[r.first.getMonth()]}–${MN[r.last.getMonth()]} ${r.last.getFullYear()}`);
+    x.fillStyle = 'rgba(8,20,40,0.55)'; x.beginPath(); x.roundRect(90, 310, 900, 1100, 50); x.fill();
+    t('I spent', 540, 410, 44, 'rgba(232,241,242,0.75)', 600); t(inr(r.spent), 540, 515, 124, '#f4b400', 900);
+    [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']]
+      .forEach(([a, b], i) => { const Y = 690 + i * 150; t(a, 160, Y, 40, 'rgba(232,241,242,0.7)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#4fd1a5' : '#fff', 800, 'right'); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(160, Y + 60, 760, 2); });
+    t(`${r.personality.emoji} ${r.personality.name}`, 540, 1320, 54, '#fff', 900);
+  } else if (design === 'roast') {
+    bg('#3b1530', '#0e2a47'); head('roasted my own spending');
+    t('🔥', 540, 400, 150); let Y = 560;
+    r.roast.filter(l => !/^You paid /.test(l)).slice(0, 3).forEach(line => { x.font = `700 50px ${F}`; const ls = wrapText(x, line, 820); x.fillStyle = 'rgba(255,92,138,0.14)'; x.beginPath(); x.roundRect(110, Y - 50, 860, ls.length * 66 + 50, 34); x.fill();
+      ls.forEach((l, k) => t(l, 540, Y + 6 + k * 66, 50, '#fff', 700)); Y += ls.length * 66 + 90; });
+  } else {
+    bg('#17436b', '#3b2a6b'); head('my money personality');
+    t(r.personality.emoji, 540, 640, 300); t(r.personality.name, 540, 960, 96, '#f4b400', 900);
+    x.font = `600 46px ${F}`; wrapText(x, r.personality.line, 820).forEach((l, k) => t(l, 540, 1070 + k * 60, 46, 'rgba(232,241,242,0.85)', 600));
+    t(`top spend: ${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`, 540, 1300, 44, '#fff', 700);
+  }
+  foot();
 }
 function cardBlob() { return new Promise(ok => $('#share').toBlob(ok, 'image/png')); }
-async function download() { const b = await cardBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'my-wrapped.png'; a.click(); }
+async function download() { const b = await cardBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'my-paisamap.png'; a.click(); count('card-download-' + design); }
 async function share() {
-  const b = await cardBlob(), f = new File([b], 'my-wrapped.png', { type: 'image/png' });
-  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text: 'My money, wrapped 🧾 paisamap.online' }); } catch {} } else download();
+  const b = await cardBlob(), f = new File([b], 'my-paisamap.png', { type: 'image/png' }); count('card-share-' + design);
+  if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text: 'Where my money went 📍 paisamap.online' }); } catch {} } else download();
 }
 
 // ---------------------------------------------------------------- wiring
 $('#file').onchange = e => { if (e.target.files.length) handleFiles([...e.target.files]); e.target.value = ''; };
-$('#demo').onclick = () => { DEMO = true; TX = sampleTxns(); run(); };
+$('#demo').onclick = () => { count('demo'); DEMO = true; TX = sampleTxns(); run(); };
 $('#again').onclick = () => { TX = []; DEMO = false; R = null; $('#result').hidden = true; $('#home').hidden = false; window.scrollTo(0, 0); };
 const drop = $('#drop'); ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
 ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));

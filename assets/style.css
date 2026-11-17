@@ -110,3 +110,10 @@ canvas{width:100%;height:auto;border-radius:var(--r-md);display:block}
 .ripple{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.45);transform:scale(0);animation:rip .6s var(--ease) forwards}
 @keyframes rip{to{transform:scale(1);opacity:0}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.mt i,.hb-t i,.lim-t i,.split i{transform:none}}
+.roast .rl{margin:0 0 10px;padding:12px 14px;border-radius:var(--r-sm);background:rgba(255,92,138,.10);border-left:3px solid var(--spend);font-weight:600}
+.go .roast .rl{animation:rise .5s var(--ease) both;animation-delay:calc(.35s + var(--i) * .12s)}
+.seg{display:flex;gap:6px;background:var(--sea);border:1px solid var(--line);border-radius:99px;padding:4px;margin:4px 0 12px}
+.seg button{flex:1;border:0;background:none;border-radius:99px;padding:8px;font-weight:700;color:var(--fog);cursor:pointer;transition:background .25s var(--ease),color .25s}
+.seg button.on{background:var(--route);color:var(--sea)}
+.help{border-color:rgba(255,92,138,.45)}.help h3{margin-top:0}.help p{color:var(--fog)}.help label{display:flex;align-items:center;gap:10px;font-weight:700}.help select{flex:1}
+.btnlike{display:flex;align-items:center;justify-content:center;flex:1;border-radius:var(--r-sm);padding:13px;font-weight:800;text-decoration:none;background:var(--sea3);color:var(--mist)}

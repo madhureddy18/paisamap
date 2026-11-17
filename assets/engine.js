@@ -173,7 +173,7 @@ export function fromText(lines) {   // PDF text lines (PhonePe, Google Pay, Payt
 }
 
 // ---------------------------------------------------------------- the summary
-const SELF = /self|own account|to self|my account|wallet load|add money|sweep|transfer to fd/i;
+const SELF = /self|own account|to self|my account|wallet load|add money|sweep|transfer to fd|transfer to x{4,}\d+/i;   // PhonePe 'Transfer to XXXX1234' = moving money to your own bank account
 export function analyse(txns, tags = {}) {
   const all = txns.map(t => ({ ...t, payee: t.payee || payeeOf(t.desc) })).filter(t => t.amount > 0);
   const outT = all.filter(t => t.dir === 'out' && !SELF.test(t.desc));
@@ -201,7 +201,8 @@ export function analyse(txns, tags = {}) {
   const top = Object.entries(cats).sort((a, b) => b[1].total - a[1].total);
   const late = outT.filter(t => /\b(1[0-1]|0?[0-4]):\d{2}\s?pm|\b(0?[0-4]):\d{2}\s?am/i.test(t.desc)).length;
   const recurring = findRecurring(outT);
-  return { recurring, txns: outT, inTotal: inT.reduce((a, t) => a + t.amount, 0), spent, first, last, nMonths, months, cats, top, regulars, small: { n: small.length, total: smallTotal, perYear: perYear(smallTotal) }, fixed, flexible: spent - fixed, plan, saveYear, avgMonth, budget: Math.max(0, avgMonth - saveYear / 12), perYear, personality: personality(cats, spent, small.length, outT.length) };
+  const roast = makeRoast({ cats, outT, spent, small, months, recurring, payees: Object.values(payees), perYear });
+  return { recurring, roast, txns: outT, inTotal: inT.reduce((a, t) => a + t.amount, 0), spent, first, last, nMonths, months, cats, top, regulars, small: { n: small.length, total: smallTotal, perYear: perYear(smallTotal) }, fixed, flexible: spent - fixed, plan, saveYear, avgMonth, budget: Math.max(0, avgMonth - saveYear / 12), perYear, personality: personality(cats, spent, small.length, outT.length) };
 }
 function personality(cats, spent, nSmall, n) {
   const share = k => (cats[k] ? cats[k].total / spent : 0);
@@ -278,4 +279,22 @@ export function parseMessage(text) {
   const date = findDate(s) || new Date();
   const name = payee ? payeeOf('Paid to ' + payee) : payeeOf(s);
   return { date: new Date(date.getFullYear(), date.getMonth(), date.getDate()), desc: s.slice(0, 200), payee: name, amount, dir: isIn ? 'in' : 'out', src: 'sms' };
+}
+
+// ---------------------------------------------------------------- roast lines (funny, shareable, from real numbers)
+function makeRoast({ cats, outT, spent, small, months, recurring, payees, perYear }) {
+  const L = [], fmt = n => '₹' + Math.round(n).toLocaleString('en-IN'), MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const c = k => cats[k] || { total: 0, n: 0 };
+  if (c('food').n >= 8) L.push([c('food').total, `${c('food').n} food delivery orders. Your kitchen filed a missing person complaint.`]);
+  if (small.n >= 30) L.push([small.total * 1.2, `${small.n} payments under ₹100. Death by a thousand chais.`]);
+  const ppl = c('people').total / spent; if (ppl >= 0.35) L.push([c('people').total, `${Math.round(ppl * 100)}% of your money went to other people. You're basically everyone's ATM.`]);
+  const top = payees.filter(p => p.cat === 'people').sort((a, b) => b.n - a.n)[0];
+  if (top && top.n >= 4) L.push([top.total, `You paid ${top.name} ${top.n} times. Family, friend, or subscription?`]);
+  if (c('shopping').n >= 4) L.push([c('shopping').total, `${fmt(c('shopping').total)} on shopping. The delivery guy knows your address better than your relatives.`]);
+  const subs = recurring.reduce((a, r) => a + r.year, 0); if (subs >= 1200) L.push([subs, `${fmt(subs)} a year on things that charge you every month. Do you even use all of them?`]);
+  const tiny = outT.filter(t => t.amount <= 10).length; if (tiny >= 4) L.push([tiny * 50, `${tiny} payments of ₹10 or less. Free trials are never free.`]);
+  const hm = months.reduce((a, m) => m.total > a.total ? m : a, months[0]); if (months.length >= 3) L.push([hm.total / 3, `${MN[hm.m]} was wild: ${fmt(hm.total)} gone in one month.`]);
+  if (c('travel').n >= 10) L.push([c('travel').total, `${c('travel').n} rides and fuel stops. Your bike/auto guy is doing better than you.`]);
+  if (!L.length) L.push([1, `Honestly? Your spending is boring. That's a compliment.`]);
+  return L.sort((a, b) => b[0] - a[0]).slice(0, 4).map(x => x[1]);
 }
