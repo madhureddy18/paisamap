@@ -4,50 +4,83 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PaisaMap — see where your money went</title>
-<meta name="description" content="Upload your bank or PhonePe statement and see where your money went: every month, the whole year, small spends, your regulars and how much you can save. Free. Read on your phone only.">
+<meta name="description" content="Upload your bank or PhonePe statement and see where your money went: every month, the whole year, small spends, repeats and how much you can save. Free. Read on your phone only.">
 <meta property="og:title" content="PaisaMap">
 <meta property="og:description" content="See where every rupee went. Free, and your statement never leaves your phone.">
-<meta name="theme-color" content="#0b0f2a">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
-<link rel="stylesheet" href="assets/style.css?v=5">
+<meta name="theme-color" content="#0e2a47">
+<link rel="icon" href="icon-192.png">
+<link rel="preload" href="fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=6">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="vendor/xlsx.full.min.js" defer></script>
-<script type="module" src="assets/app.js?v=5"></script>
+<script type="module" src="assets/app.js?v=6"></script>
+<script type="module" src="assets/motion.js?v=6"></script>
 </head>
 <body>
+<div class="cursor" aria-hidden="true"><i></i></div>
 <main>
   <div id="home">
-    <header class="top"><span class="logo">🧾 PaisaMap</span><span class="by">free · private</span></header>
+    <header class="top">
+      <span class="logo"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z" fill="#F4B400"/><circle cx="12" cy="9" r="3" fill="#0e2a47"/></svg>PaisaMap</span>
+      <span class="safe">🔒 stays on your phone</span>
+    </header>
+
+    <section class="hero-map" aria-label="Your money's route through a month">
+      <svg id="route" viewBox="0 0 360 230" role="img" aria-label="A coin travelling from salary to food, travel, shopping and bills">
+        <defs>
+          <linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a4a73"/><stop offset="1" stop-color="#1a4a73" stop-opacity="0"/></linearGradient><linearGradient id="lg2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#15406a"/><stop offset="1" stop-color="#15406a" stop-opacity="0"/></linearGradient>
+          <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M18 0H0V18" fill="none" stroke="rgba(159,182,198,.10)" stroke-width="1"/></pattern>
+        </defs>
+        <rect width="360" height="230" fill="url(#grid)"/>
+        <path class="land" fill="url(#lg)" d="M-10 170 C40 140 70 190 120 165 S210 120 250 150 S330 175 380 140 L380 230 L-10 230Z"/>
+        <path class="land l2" fill="url(#lg2)" d="M-10 40 C30 60 60 20 110 35 S180 70 220 45 S300 15 380 40 L380 0 L-10 0Z"/>
+        <path id="trail" class="trail" d="M30 118 C70 60 110 70 128 104 S170 168 205 126 S250 52 290 88 S330 150 338 172"/>
+        <g class="pin" data-at="0.02" transform="translate(30 118)"><g class="pp"><circle r="15"/><text y="5">💰</text><text class="pl" y="31">salary</text></g></g>
+        <g class="pin" data-at="0.27" transform="translate(128 104)"><g class="pp"><circle r="15"/><text y="5">🍔</text><text class="pl" y="31">food</text></g></g>
+        <g class="pin" data-at="0.5" transform="translate(205 126)"><g class="pp"><circle r="15"/><text y="5">🛺</text><text class="pl" y="31">travel</text></g></g>
+        <g class="pin" data-at="0.74" transform="translate(290 88)"><g class="pp"><circle r="15"/><text y="5">🛍️</text><text class="pl" y="-22">shopping</text></g></g>
+        <g class="pin" data-at="0.98" transform="translate(338 172)"><g class="pp"><circle r="15"/><text y="5">🧾</text><text class="pl" y="31">bills</text></g></g>
+        <g id="coin"><circle r="9"/><text y="3.6">₹</text></g>
+      </svg>
+    </section>
+
     <section class="intro">
-      <h1>See where every rupee went.</h1>
-      <p>Every month, your whole year, the small spends that add up, and how much you can save.</p>
+      <h1>Where did your money go?</h1>
+      <p>Upload your bank or PhonePe statement. PaisaMap shows every month, the whole year, the small spends that add up, and how much you can save.</p>
     </section>
-    <label id="drop" class="drop">
+
+    <label id="drop" class="upload">
       <input id="file" type="file" accept=".pdf,.csv,.xls,.xlsx,application/pdf,text/csv" multiple hidden>
-      <span class="ic">📄</span><b>Upload your statement</b><small>PhonePe PDF or your bank's statement (PDF, Excel or CSV)</small>
+      <span class="up-ic" aria-hidden="true">↑</span>
+      <span><b>Upload your statement</b><small>PDF, Excel or CSV</small></span>
     </label>
-    <p id="status" class="status"></p>
-    <p class="lock">🔒 Read on your phone only. Nothing is uploaded, nothing is stored.</p>
-    <button id="demo" class="ghost">Try with sample data</button>
+    <button id="demo" class="ghost">See it with sample data</button>
+    <p id="status" class="status" role="status"></p>
+    <p class="lock">Your statement is read on this phone. Nothing is uploaded or saved.</p>
+
+    <section class="legend" aria-label="What you'll see">
+      <h2>What you get</h2>
+      <ul>
+        <li><span>📈</span><b>Every month</b>how much went out, and the costliest month</li>
+        <li><span>🪙</span><b>Small spends</b>your ₹20–₹100 payments, added up</li>
+        <li><span>🔁</span><b>Repeats</b>subscriptions and bills that come back every month</li>
+        <li><span>🚦</span><b>Monthly limits</b>a warning at 80%, and when you cross it</li>
+        <li><span>💰</span><b>Your plan</b>what to cut, and what you save in a year</li>
+      </ul>
+    </section>
+
     <section class="how">
-      <h3>How to get your statement</h3>
-      <details><summary>PhonePe</summary><p>Open PhonePe → <b>History</b> → tap <b>Download statement</b> (top right) → pick the months → it comes to your email as a PDF. The PDF password is usually in that email.</p></details>
-      <details><summary>Your bank (SBI, HDFC, ICICI, Axis…)</summary><p>Net banking or the bank app → <b>Accounts</b> → <b>Statement</b> → choose the dates → download as <b>Excel/CSV</b> (best) or PDF.</p></details>
-      <details><summary>Google Pay / Paytm</summary><p>UPI apps pay from your bank account, so your <b>bank statement</b> already has these payments. Use that.</p></details>
+      <h2>Getting your statement</h2>
+      <details><summary>PhonePe</summary><p>PhonePe → <b>History</b> → <b>Download statement</b> (top right) → pick the months. It arrives by email as a PDF; the password is usually in that email.</p></details>
+      <details><summary>Your bank (SBI, HDFC, ICICI, Axis…)</summary><p>Net banking or the bank app → <b>Accounts</b> → <b>Statement</b> → choose dates → download as <b>Excel/CSV</b> (best) or PDF.</p></details>
+      <details><summary>Google Pay or Paytm</summary><p>These pay from your bank account, so your <b>bank statement</b> already has every payment.</p></details>
     </section>
-    <section class="feat">
-      <div>📈<b>Every month</b><span>how much, and on what</span></div>
-      <div>📊<b>Whole year</b><span>food, shopping, travel, bills…</span></div>
-      <div>🪙<b>Small spends</b><span>your ₹20–₹100 payments, added up</span></div>
-      <div>💰<b>Your plan</b><span>what to cut, how much you save</span></div>
-      <div>🚦<b>Monthly limits</b><span>warnings at 80% and when you cross it</span></div>
-      <div>🔁<b>Repeats</b><span>subscriptions you forgot to cancel</span></div>
-    </section>
-    <p class="foot">Made by <a href="https://www.instagram.com/maddiee.makess/">@maddiee.makess</a> · Free · Not financial advice</p>
+    <p class="foot">Made by <a href="https://www.instagram.com/maddiee.makess/">@maddiee.makess</a>. Free. Not financial advice.</p>
   </div>
+
   <div id="result" hidden>
-    <header class="top"><span class="logo">🧾 PaisaMap</span><button id="again" class="small-btn">New statement</button></header>
+    <header class="top"><span class="logo"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 2c-3.9 0-7 3.1-7 7 0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z" fill="#F4B400"/><circle cx="12" cy="9" r="3" fill="#0e2a47"/></svg>PaisaMap</span><button id="again" class="small-btn">New statement</button></header>
     <div id="result-body"></div>
   </div>
 </main>

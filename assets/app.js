@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=5';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=6';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -49,7 +49,7 @@ async function handleFiles(files) {
   if (!TX.some(t => t.dir === 'out')) { status('No payments found in that file. Try your bank\'s Excel/CSV statement, or send us the format on Instagram @maddiee.makess.', true); return; }
   status(''); run();
 }
-function status(msg, bad) { const el = $('#status'); el.textContent = msg; el.className = bad ? 'status bad' : 'status'; }
+function status(msg, bad) { const el = $('#status'); el.textContent = msg; el.className = bad ? 'status bad' : 'status'; $('#drop').classList.toggle('busy', !!msg && !bad); }
 
 // ---------------------------------------------------------------- render
 function run() { R = analyse(TX, tags); if (!R) { $('#home').hidden = false; $('#result').hidden = true; return; } render(); $('#home').hidden = true; $('#result').hidden = false; window.scrollTo(0, 0); }
@@ -63,8 +63,8 @@ function render() {
   ${DEMO ? '<p class="demo-note">👀 This is sample data. Upload your statement to see yours.</p>' : ''}
   ${tracker()}
   <section class="card hero">
-    <p class="kicker">${period} · ${r.txns.length.toLocaleString('en-IN')} payments</p>
-    <h2>You spent <b>${inr(r.spent)}</b></h2>
+    <p class="kicker">${period}, ${r.txns.length.toLocaleString('en-IN')} payments</p>
+    <h2>You spent <b data-n="${Math.round(r.spent)}">${inr(r.spent)}</b></h2>
     <div class="row3"><div><span>per month</span><b>${short(r.avgMonth)}</b></div><div><span>small spends</span><b>${short(r.small.total)}</b></div><div><span>can save / yr</span><b class="g">${short(r.saveYear)}</b></div></div>
   </section>
 
@@ -80,7 +80,7 @@ function render() {
 
   <section class="card small"><h3>🪙 Small spends add up</h3>
     <p class="big">${r.small.n.toLocaleString('en-IN')} payments under ₹100</p>
-    <p class="huge">${inr(r.small.total)}</p>
+    <p class="huge" data-n="${Math.round(r.small.total)}">${inr(r.small.total)}</p>
     <p class="note">That's about <b>${inr(r.small.perYear)}</b> a year, or <b>${inr(r.small.perYear / 365)}</b> a day. Tea, tiffin, snacks, auto… one small payment at a time.</p>
   </section>
 
@@ -103,7 +103,7 @@ function render() {
 
   <section class="card plan"><h3>💰 Your plan</h3>
     ${r.plan.length ? r.plan.map(p => `<div class="pl"><span>${p.emoji} ${p.label}</span><b>${inr(p.save)}/yr</b></div>`).join('') : '<p class="note">Nothing big to cut. Nice.</p>'}
-    <div class="tot"><span>You could save</span><b>${inr(r.saveYear)} a year</b></div>
+    <div class="tot"><span>You could save</span><b data-n="${Math.round(r.saveYear)}" data-tpl="₹# a year">${inr(r.saveYear)} a year</b></div>
     <p class="note">Suggested monthly budget: <b>${inr(Math.round(r.budget / 500) * 500)}</b> (you average ${inr(r.avgMonth)}).</p>
   </section>
 
@@ -125,13 +125,13 @@ function render() {
 // ---------------------------------------------------------------- share card
 function drawCard() {
   const c = $('#share'), x = c.getContext('2d'), r = R;
-  const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, '#1b1f5e'); g.addColorStop(0.55, '#3a1d6e'); g.addColorStop(1, '#ff7a1a'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
+  const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, '#0e2a47'); g.addColorStop(0.6, '#17436b'); g.addColorStop(1, '#1f6f6b'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
   const t = (s, X, Y, size, col = '#fff', w = 800, al = 'center') => { x.font = `${w} ${size}px system-ui, -apple-system, "Segoe UI", sans-serif`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
   t('🧾 PaisaMap', 540, 170, 64); t(`my ${r.last.getFullYear()} money`, 540, 250, 40, 'rgba(255,255,255,0.8)', 600);
   x.fillStyle = 'rgba(8,10,35,0.55)'; x.beginPath(); x.roundRect(90, 330, 900, 1150, 50); x.fill();
-  t('I spent', 540, 430, 44, 'rgba(255,255,255,0.75)', 600); t(inr(r.spent), 540, 530, 120, '#ffc53d', 900);
+  t('I spent', 540, 430, 44, 'rgba(255,255,255,0.75)', 600); t(inr(r.spent), 540, 530, 120, '#f4b400', 900);
   const rows = [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']];
-  rows.forEach(([a, b], i) => { const Y = 700 + i * 150; t(a, 160, Y, 40, 'rgba(255,255,255,0.7)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#3ddc97' : '#fff', 800, 'right'); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(160, Y + 60, 760, 2); });
+  rows.forEach(([a, b], i) => { const Y = 700 + i * 150; t(a, 160, Y, 40, 'rgba(255,255,255,0.7)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#4fd1a5' : '#fff', 800, 'right'); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(160, Y + 60, 760, 2); });
   t(r.personality.emoji, 540, 1340, 90); t(r.personality.name, 540, 1430, 56, '#fff', 900);
   t('find yours at paisamap.online', 540, 1620, 44, '#fff', 800); t('@maddiee.makess', 540, 1700, 36, 'rgba(255,255,255,0.8)', 600);
 }
