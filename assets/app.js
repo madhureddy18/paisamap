@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=8';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=9';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -30,7 +30,10 @@ async function readPdf(file) {
   }
   return fromText(lines);
 }
+let xlsxReady = null;
+function loadXlsx() { return xlsxReady ||= new Promise((ok, bad) => { if (window.XLSX) return ok(); const s = document.createElement('script'); s.src = 'vendor/xlsx.full.min.js'; s.onload = ok; s.onerror = bad; document.head.appendChild(s); }); }
 async function readSheet(file) {
+  await loadXlsx();
   const isCsv = /\.(csv|txt)$/i.test(file.name);
   const wb = isCsv ? XLSX.read(await file.text(), { type: 'string', raw: true }) : XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
   let out = [];
@@ -173,7 +176,7 @@ function drawCard() {
   foot();
 }
 function cardBlob() { return new Promise(ok => $('#share').toBlob(ok, 'image/png')); }
-async function download() { const b = await cardBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'my-paisamap.png'; a.click(); count('card-download-' + design); }
+async function download() { if (/Instagram|FBAN|FBAV/i.test(navigator.userAgent)) { alert('Instagram\'s browser can\'t save images. Tap ⋯ (top right) → Open in browser, then download your card.'); return; } const b = await cardBlob(), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'my-paisamap.png'; a.click(); count('card-download-' + design); }
 async function share() {
   const b = await cardBlob(), f = new File([b], 'my-paisamap.png', { type: 'image/png' }); count('card-share-' + design);
   if (navigator.canShare && navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], text: 'Where my money went 📍 paisamap.online' }); } catch {} } else download();
