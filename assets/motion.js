@@ -15,18 +15,6 @@ if (trail && coin) {
   }
 }
 
-// ---------- cursor (mouse only): a ring that trails the pointer and grows on things you can press
-const cur = document.querySelector('.cursor');
-if (cur && matchMedia('(hover: hover) and (pointer: fine)').matches && !reduce) {
-  let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
-  addEventListener('mousemove', e => { x = e.clientX; y = e.clientY; cur.classList.add('on'); }, { passive: true });
-  addEventListener('mouseleave', () => cur.classList.remove('on'));
-  addEventListener('mousedown', () => cur.classList.add('press')); addEventListener('mouseup', () => cur.classList.remove('press'));
-  addEventListener('mouseover', e => cur.classList.toggle('big', !!e.target.closest('button, a, label, select, summary, .pin')));
-  const loop = () => { cx += (x - cx) * 0.2; cy += (y - cy) * 0.2; cur.style.transform = `translate(${cx}px, ${cy}px)`; requestAnimationFrame(loop); };
-  loop();
-}
-
 // ---------- tap ripple on buttons
 addEventListener('pointerdown', e => {
   const b = e.target.closest('.upload, .btns button, .add button, .small-btn'); if (!b || reduce) return;

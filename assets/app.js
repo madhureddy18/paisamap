@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=6';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=7';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');

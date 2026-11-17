@@ -109,10 +109,4 @@ canvas{width:100%;height:auto;border-radius:var(--r-md);display:block}
 @keyframes rise{from{opacity:0;transform:translateY(16px)}}
 .ripple{position:absolute;border-radius:50%;pointer-events:none;background:rgba(255,255,255,.45);transform:scale(0);animation:rip .6s var(--ease) forwards}
 @keyframes rip{to{transform:scale(1);opacity:0}}
-.cursor{position:fixed;left:0;top:0;width:34px;height:34px;margin:-17px 0 0 -17px;border:2px solid var(--route);border-radius:50%;pointer-events:none;z-index:99;opacity:0;
-  transition:width .25s var(--spring),height .25s var(--spring),margin .25s var(--spring),background .25s,opacity .3s}
-.cursor i{position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:var(--route)}
-.cursor.on{opacity:1}.cursor.big{width:58px;height:58px;margin:-29px 0 0 -29px;background:rgba(244,180,0,.12)}
-.cursor.press{width:26px;height:26px;margin:-13px 0 0 -13px}
-@media (hover:none),(pointer:coarse){.cursor{display:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.mt i,.hb-t i,.lim-t i,.split i{transform:none}}
