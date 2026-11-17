@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=9';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=10';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -73,7 +73,7 @@ function bars(items, max, fmt = short) {
   return items.map(([label, v, col, sub]) => `<div class="hb"><div class="hb-l">${label}</div><div class="hb-t"><i style="width:${Math.max(2, v / max * 100)}%;background:${col}"></i></div><div class="hb-v">${fmt(v)}${sub ? `<small>${sub}</small>` : ''}</div></div>`).join('');
 }
 function render() {
-  const r = R, period = `${MN[r.first.getMonth()]} ${r.first.getFullYear()} – ${MN[r.last.getMonth()]} ${r.last.getFullYear()}`;
+  const r = R, one = r.first.getMonth() === r.last.getMonth() && r.first.getFullYear() === r.last.getFullYear(), period = one ? `${MN[r.first.getMonth()]} ${r.first.getFullYear()}` : `${MN[r.first.getMonth()]} ${r.first.getFullYear()} – ${MN[r.last.getMonth()]} ${r.last.getFullYear()}`;
   const maxM = Math.max(...r.months.map(m => m.total)), topM = r.months.reduce((a, m) => m.total > a.total ? m : a, r.months[0]);
   $('#result-body').innerHTML = `
   ${DEMO ? '<p class="demo-note">👀 This is sample data. Upload your statement to see yours.</p>' : ''}
@@ -156,7 +156,7 @@ function drawCard() {
   const head = sub => { t('📍 PaisaMap', 540, 150, 60); t(sub, 540, 225, 38, 'rgba(232,241,242,0.75)', 600); };
   const foot = () => { t('find yours at paisamap.online', 540, 1760, 44, '#fff', 800); t('@maddiee.makess', 540, 1830, 34, 'rgba(232,241,242,0.75)', 600); };
   if (design === 'sum') {
-    bg('#0e2a47', '#1f6f6b'); head(`my money, ${MN[r.first.getMonth()]}–${MN[r.last.getMonth()]} ${r.last.getFullYear()}`);
+    bg('#0e2a47', '#1f6f6b'); head(`my money, ${r.first.getMonth() === r.last.getMonth() ? '' : MN[r.first.getMonth()] + '–'}${MN[r.last.getMonth()]} ${r.last.getFullYear()}`);
     x.fillStyle = 'rgba(8,20,40,0.55)'; x.beginPath(); x.roundRect(90, 310, 900, 1100, 50); x.fill();
     t('I spent', 540, 410, 44, 'rgba(232,241,242,0.75)', 600); t(inr(r.spent), 540, 515, 124, '#f4b400', 900);
     [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']]

@@ -147,7 +147,9 @@ export function fromText(lines) {   // PDF text lines (PhonePe, Google Pay, Payt
   const isStart = l => { const d = findDate(l); if (!d) return null; const idx = l.search(/\d|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i); return idx >= 0 && idx < 6 ? d : null; };
   for (const raw of lines) {
     const l = raw.replace(/\s+/g, ' ').trim(); if (!l) continue;
+    if (/^(note\b|disclaimer|this is a (system|computer)|page \d+ of \d+$)/i.test(l)) { cur = null; continue; }   // footer text, never part of a payment
     if (/^(date|page \d|statement|transaction details|opening balance|closing balance|total)/i.test(l) && !/paid to|received from/i.test(l)) { if (/opening|closing|total/i.test(l)) cur = null; continue; }
+    if (/(\d{4}|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*(-|to)\s*\d{1,2}[\s\/-]*([a-z]{3,9}|\d{1,2})[\s,\/-]*\d{2,4}/i.test(l) && findDate(l)) { cur = null; continue; }   // statement period line '01 Aug 2026 - 31 Oct 2026'
     const d = isStart(l);
     if (d) { cur = { date: d, text: l }; recs.push(cur); } else if (cur && cur.text.length < 600) cur.text += ' | ' + l;
   }
@@ -158,8 +160,11 @@ export function fromText(lines) {   // PDF text lines (PhonePe, Google Pay, Payt
     const ams = amountsIn(noDate.replace(/(transaction id|utr no\.?|ref(?:erence)? no\.?|txn id|order id)\s*[:.]?\s*\S+/gi, ' ')).filter(a => a > 0 && a < 1e8);
     if (!ams.length) continue;
     let dir = null;
-    if (/\bdebit\b|\bdr\b|paid to|sent to|withdrawal|purchase/i.test(s)) dir = 'out';
-    if (/\bcredit\b|\bcr\b|received from|refund|cashback|deposit|salary/i.test(s) && !/paid to|sent to/i.test(s)) dir = dir === 'out' && /\bdebit\b/i.test(s) ? 'out' : 'in';
+    const head = r.text.split('|')[0];   // the first line says what happened; later lines (GPay 'Paid to State Bank of India') are only the account used
+    if (/received from|credited|refund|cashback/i.test(head) && !/paid to|sent to/i.test(head)) dir = 'in';
+    else if (/paid to|sent to/i.test(head)) dir = 'out';
+    if (!dir && /\bdebit\b|\bdr\b|paid to|sent to|withdrawal|purchase/i.test(s)) dir = 'out';
+    if (!/received from|paid to|sent to/i.test(head) && /\bcredit\b|\bcr\b|received from|refund|cashback|deposit|salary/i.test(s) && !/paid to|sent to/i.test(s)) dir = dir === 'out' && /\bdebit\b/i.test(s) ? 'out' : 'in';
     let amount = ams[0];
     if (ams.length >= 2 && !/paid to|received from|sent to/i.test(s)) {   // bank PDF: amount + running balance
       const bal = ams[ams.length - 1]; amount = ams[ams.length - 2];
