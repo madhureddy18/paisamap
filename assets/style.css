@@ -54,3 +54,7 @@ canvas{width:100%;height:auto;border-radius:14px;display:block}
 .add input,.add select,.add textarea{flex:1;min-width:0;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:15px}
 .add textarea{width:100%;margin:6px 0}.add button:not(.link){border:0;border-radius:10px;padding:10px 16px;font-weight:800;background:var(--acc);color:#1a1206}
 .pl small{color:var(--mute);font-size:12px}.y{color:var(--acc)!important}
+.months{margin-top:4px}.mrow{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:8px;margin:6px 0;font-size:14px;position:relative}
+.mrow .mn{color:var(--mute);font-weight:700}.mt{height:14px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}.mt i{display:block;height:100%;border-radius:99px;background:#5a7cff}
+.mrow b{white-space:nowrap;min-width:78px;text-align:right}.mrow.hi .mn,.mrow.hi b{color:var(--acc)}.mrow.hi .mt i{background:var(--acc)}
+.mrow em{position:absolute;right:0;top:-11px;font-style:normal;font-size:10px;font-weight:800;color:#1a1206;background:var(--acc);border-radius:99px;padding:0 6px}

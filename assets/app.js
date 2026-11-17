@@ -67,8 +67,8 @@ function render() {
   </section>
 
   <section class="card"><h3>📈 Every month</h3>
-    <div class="cols">${r.months.map(m => `<div class="col${m === topM ? ' hi' : ''}"><em>${short(m.total)}</em><i style="height:${Math.max(3, m.total / maxM * 100)}%"></i><span>${MN[m.m][0]}${r.months.length > 12 ? '' : ''}</span></div>`).join('')}</div>
-    <p class="note">Highest: <b>${MN[topM.m]} ${topM.y}</b> (${inr(topM.total)})</p>
+    <div class="months">${r.months.map(m => `<div class="mrow${m === topM ? ' hi' : ''}"><span class="mn">${MN[m.m]}${r.months.length > 12 || m.y !== r.last.getFullYear() ? ' ' + String(m.y).slice(2) : ''}</span><div class="mt"><i style="width:${Math.max(2, m.total / maxM * 100)}%"></i></div><b>${inr(m.total)}${m === topM ? ' 👑' : ''}</b></div>`).join('')}</div>
+    <p class="note">👑 Highest: <b>${MN[topM.m]} ${topM.y}</b> (${inr(topM.total)})</p>
     ${r.months.length >= 2 ? (() => { const a = r.months[r.months.length - 2], b = r.months[r.months.length - 1], d = b.total - a.total; return `<p class="note">${MN[b.m]} vs ${MN[a.m]}: <b class="${d > 0 ? 'r' : 'g'}">${d > 0 ? '↑' : '↓'} ${inr(Math.abs(d))}</b>${r.last.getDate() < 25 ? ' (this month isn\'t over yet)' : ''}</p>`; })() : ''}
   </section>
 
