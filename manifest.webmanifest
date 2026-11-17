@@ -1,6 +1,6 @@
 {
- "name": "Wrapped by PaisaMap",
- "short_name": "Wrapped",
+ "name": "PaisaMap",
+ "short_name": "PaisaMap",
  "description": "See where your money went, set monthly limits, get warned before you overspend. Your data stays on your phone.",
  "start_url": "/",
  "scope": "/",

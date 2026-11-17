@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Wrapped by PaisaMap — see where your money went</title>
+<title>PaisaMap — see where your money went</title>
 <meta name="description" content="Upload your bank or PhonePe statement and see where your money went: every month, the whole year, small spends, your regulars and how much you can save. Free. Read on your phone only.">
-<meta property="og:title" content="Wrapped by PaisaMap">
+<meta property="og:title" content="PaisaMap">
 <meta property="og:description" content="See where every rupee went. Free, and your statement never leaves your phone.">
 <meta name="theme-color" content="#0b0f2a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
-<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/style.css?v=5">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <script src="vendor/xlsx.full.min.js" defer></script>
-<script type="module" src="assets/app.js"></script>
+<script type="module" src="assets/app.js?v=5"></script>
 </head>
 <body>
 <main>
   <div id="home">
-    <header class="top"><span class="logo">🧾 Wrapped</span><span class="by">by PaisaMap</span></header>
+    <header class="top"><span class="logo">🧾 PaisaMap</span><span class="by">free · private</span></header>
     <section class="intro">
       <h1>See where every rupee went.</h1>
       <p>Every month, your whole year, the small spends that add up, and how much you can save.</p>
@@ -28,7 +28,6 @@
       <span class="ic">📄</span><b>Upload your statement</b><small>PhonePe PDF or your bank's statement (PDF, Excel or CSV)</small>
     </label>
     <p id="status" class="status"></p>
-    <button id="open" class="primary" hidden>Open my tracker</button>
     <p class="lock">🔒 Read on your phone only. Nothing is uploaded, nothing is stored.</p>
     <button id="demo" class="ghost">Try with sample data</button>
     <section class="how">
@@ -48,7 +47,7 @@
     <p class="foot">Made by <a href="https://www.instagram.com/maddiee.makess/">@maddiee.makess</a> · Free · Not financial advice</p>
   </div>
   <div id="result" hidden>
-    <header class="top"><span class="logo">🧾 Wrapped</span><button id="again" class="small-btn">New statement</button></header>
+    <header class="top"><span class="logo">🧾 PaisaMap</span><button id="again" class="small-btn">New statement</button></header>
     <div id="result-body"></div>
   </div>
 </main>

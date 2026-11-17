@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=5';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -8,8 +8,10 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
 let TX = [], R = null, DEMO = false, tags = store.get('pm_tags', {}), limits = store.get('pm_limits', { total: 0, cats: {} });
-const saveTx = () => { if (!DEMO) store.set('pm_tx', TX.map(t => ({ ...t, date: +t.date }))); };
-const loadTx = () => store.get('pm_tx', []).map(t => ({ ...t, date: new Date(t.date) }));
+// Statements and payments are NEVER saved: they live only in this page and vanish when it closes.
+try { localStorage.removeItem('pm_tx'); } catch {}
+const saveTx = () => {};
+const loadTx = () => [];
 const keyOf = t => +t.date + '|' + t.amount + '|' + t.dir + '|' + String(t.desc).slice(0, 40);
 function addTx(list) { const seen = new Set(TX.map(keyOf)); for (const t of list) { const k = keyOf(t); if (!seen.has(k)) { seen.add(k); TX.push(t); } } saveTx(); }
 
@@ -113,11 +115,11 @@ function render() {
 
   <details class="card"><summary>All payments (${r.txns.length})</summary>
     <div class="list">${r.txns.slice().sort((a, b) => b.date - a.date).slice(0, 400).map(t => `<div class="tx"><span>${t.date.getDate()} ${MN[t.date.getMonth()]}</span><span>${CATS[t.cat].emoji} ${esc(t.payee)}</span><b>${inr(t.amount)}</b></div>`).join('')}</div></details>
-  <p class="foot"><button id="wipe" class="link">Delete my data from this phone</button></p>
+  <p class="foot"><button id="wipe" class="link">Reset my limits & labels</button></p>
   <p class="foot">Read on your phone only. Nothing was uploaded. Categories are a best guess from payment names. Not financial advice.</p>`;
   document.querySelectorAll('.reg select').forEach(s => s.onchange = () => { tags[s.dataset.name] = s.value; store.set('pm_tags', tags); run(); });
   drawCard(); $('#dl').onclick = download; $('#sh').onclick = share; wireTracker();
-  $('#wipe').onclick = () => { if (!confirm('Delete all your payments, labels and limits from this phone?')) return; ['pm_tx', 'pm_tags', 'pm_limits'].forEach(k => localStorage.removeItem(k)); TX = []; tags = {}; limits = { total: 0, cats: {} }; R = null; $('#result').hidden = true; $('#home').hidden = false; updateHome(); };
+  $('#wipe').onclick = () => { if (!confirm('Reset your monthly limits and shop labels on this phone?')) return; ['pm_tags', 'pm_limits'].forEach(k => localStorage.removeItem(k)); TX = []; tags = {}; limits = { total: 0, cats: {} }; R = null; $('#result').hidden = true; $('#home').hidden = false; };
 }
 
 // ---------------------------------------------------------------- share card
@@ -125,7 +127,7 @@ function drawCard() {
   const c = $('#share'), x = c.getContext('2d'), r = R;
   const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, '#1b1f5e'); g.addColorStop(0.55, '#3a1d6e'); g.addColorStop(1, '#ff7a1a'); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
   const t = (s, X, Y, size, col = '#fff', w = 800, al = 'center') => { x.font = `${w} ${size}px system-ui, -apple-system, "Segoe UI", sans-serif`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
-  t('🧾 Wrapped', 540, 170, 64); t(`my ${r.last.getFullYear()} money`, 540, 250, 40, 'rgba(255,255,255,0.8)', 600);
+  t('🧾 PaisaMap', 540, 170, 64); t(`my ${r.last.getFullYear()} money`, 540, 250, 40, 'rgba(255,255,255,0.8)', 600);
   x.fillStyle = 'rgba(8,10,35,0.55)'; x.beginPath(); x.roundRect(90, 330, 900, 1150, 50); x.fill();
   t('I spent', 540, 430, 44, 'rgba(255,255,255,0.75)', 600); t(inr(r.spent), 540, 530, 120, '#ffc53d', 900);
   const rows = [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']];
@@ -143,7 +145,7 @@ async function share() {
 // ---------------------------------------------------------------- wiring
 $('#file').onchange = e => { if (e.target.files.length) handleFiles([...e.target.files]); e.target.value = ''; };
 $('#demo').onclick = () => { DEMO = true; TX = sampleTxns(); run(); };
-$('#again').onclick = () => { if (DEMO) { TX = loadTx(); DEMO = false; } $('#result').hidden = true; $('#home').hidden = false; updateHome(); window.scrollTo(0, 0); };
+$('#again').onclick = () => { TX = []; DEMO = false; R = null; $('#result').hidden = true; $('#home').hidden = false; window.scrollTo(0, 0); };
 const drop = $('#drop'); ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
 ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
 drop.addEventListener('drop', e => { if (e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files]); });
@@ -183,7 +185,7 @@ function tracker() {
       <div class="add-row"><select id="qa-cat">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.emoji} ${c.label}</option>`).join('')}</select><button id="qa-go">Add</button></div>
       <details><summary>📋 Paste a payment SMS or UPI notification</summary>
         <textarea id="qa-sms" rows="3" placeholder="e.g. Rs.250.00 debited from A/c XX1234 to VPA swiggy@icici…"></textarea><button id="qa-sms-go">Add from message</button>
-        <p class="note">On Android, install this app (browser menu → Add to Home screen), then use <b>Share → Wrapped</b> on any bank SMS.</p></details>
+        <p class="note">On Android, install this app (browser menu → Add to Home screen), then use <b>Share → PaisaMap</b> on any bank SMS.</p></details>
       <p id="qa-msg" class="note"></p>
     </div></section>`;
 }
@@ -199,7 +201,7 @@ function wireTracker() {
   $('#qa-go').onclick = () => {
     const a = +$('#qa-amt').value; if (!(a > 0)) return msg('Enter an amount.');
     const what = $('#qa-what').value.trim() || CATS[$('#qa-cat').value].label, d = new Date();
-    if (DEMO) { TX = loadTx(); DEMO = false; }
+    if (DEMO) { TX = []; DEMO = false; }
     addTx([{ date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), desc: 'Added: ' + what + ' #' + Date.now(), payee: what, fixedCat: $('#qa-cat').value, amount: a, dir: 'out', src: 'manual' }]); run();
   };
   $('#qa-sms-go').onclick = () => { addFromMessage($('#qa-sms').value); };
@@ -207,15 +209,12 @@ function wireTracker() {
 function addFromMessage(text) {
   const t = parseMessage(text);
   if (!t) { const el = $('#qa-msg'); if (el) el.textContent = "Couldn't find an amount in that message."; else status("Couldn't find an amount in that message.", true); return; }
-  if (DEMO) { TX = loadTx(); DEMO = false; }
+  if (DEMO) { TX = []; DEMO = false; }
   addTx([t]); run();
   setTimeout(() => { const el = $('#qa-msg'); if (el) el.textContent = `Added ${inr(t.amount)} ${t.dir === 'in' ? 'received from' : 'to'} ${t.payee} ✓`; }, 0);
 }
-function updateHome() { const n = loadTx().length; const b = $('#open'); b.hidden = !n; b.textContent = `Open my tracker (${n} payments saved)`; }
 
 // ---------------------------------------------------------------- start: saved data, share-target, installable app
-$('#open').onclick = () => { DEMO = false; TX = loadTx(); run(); };
-updateHome();
 const shared = new URLSearchParams(location.search).get('text');
-if (shared) { history.replaceState(null, '', location.pathname); TX = loadTx(); addFromMessage(shared); }
+if (shared) { history.replaceState(null, '', location.pathname); addFromMessage(shared); }
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
