@@ -2,41 +2,50 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Wrapped by PaisaMap — coming Dec 1</title>
-<meta name="description" content="See where every rupee went, every month and the whole year. Free. Coming Dec 1 from @maddiee.makess.">
-<style>
-:root{--bg:#070b24;--ink:#f6f4ee;--mute:#aab0d0;--acc:#ffc53d;--grn:#3ddc97}
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0%,#1b2a8a 0,#070b24 60%);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;padding:24px}
-main{max-width:460px;width:100%;text-align:center}
-.r{font-size:64px;margin:0}
-h1{margin:6px 0 4px;font-size:clamp(34px,10vw,48px);line-height:1.05;color:var(--acc)}
-.sub{margin:0 0 20px;color:var(--mute)}
-.pill{display:inline-block;background:var(--grn);color:#06281a;font-weight:800;padding:6px 16px;border-radius:99px;margin-bottom:22px}
-ul{list-style:none;padding:0;margin:0 0 24px;text-align:left}
-li{background:rgba(255,255,255,.06);border:1px solid rgba(150,170,255,.25);border-radius:14px;padding:12px 14px;margin:8px 0}
-.btn{display:block;background:var(--acc);color:#1a1206;text-decoration:none;font-weight:800;padding:14px;border-radius:14px}
-small{display:block;margin-top:18px;color:var(--mute)}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wrapped by PaisaMap — see where your money went</title>
+<meta name="description" content="Upload your bank or PhonePe statement and see where your money went: every month, the whole year, small spends, your regulars and how much you can save. Free. Read on your phone only.">
+<meta property="og:title" content="Wrapped by PaisaMap">
+<meta property="og:description" content="See where every rupee went. Free, and your statement never leaves your phone.">
+<meta name="theme-color" content="#0b0f2a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+<script src="vendor/xlsx.full.min.js" defer></script>
+<script type="module" src="assets/app.js"></script>
 </head>
 <body>
 <main>
-<p class="r">🧾</p>
-<h1>Wrapped</h1>
-<p class="sub" style="margin-top:-2px">by PaisaMap</p>
-<p class="sub">See where every rupee went, every month and the whole year.</p>
-<span class="pill">FREE · COMING DEC 1</span>
-<ul>
-<li>📅 Every month: how much you spent and on what</li>
-<li>📊 Your whole year by category: food, shopping, travel, bills</li>
-<li>🪙 Small spends add up: all your ₹20–₹100 payments in one number</li>
-<li>🏷️ Name a shop once and it remembers</li>
-<li>💰 A simple plan: what to cut and how much you'd save a year</li>
-</ul>
-<p class="sub">Your statement is read on your phone only. Nothing is uploaded.</p>
-<a class="btn" href="https://www.instagram.com/maddiee.makess/">Follow @maddiee.makess for the launch reel</a>
-<small>You're on the list. The link drops in a reel on Dec 1.</small>
+  <div id="home">
+    <header class="top"><span class="logo">🧾 Wrapped</span><span class="by">by PaisaMap</span></header>
+    <section class="intro">
+      <h1>See where every rupee went.</h1>
+      <p>Every month, your whole year, the small spends that add up, and how much you can save.</p>
+    </section>
+    <label id="drop" class="drop">
+      <input id="file" type="file" accept=".pdf,.csv,.xls,.xlsx,application/pdf,text/csv" multiple hidden>
+      <span class="ic">📄</span><b>Upload your statement</b><small>PhonePe PDF or your bank's statement (PDF, Excel or CSV)</small>
+    </label>
+    <p id="status" class="status"></p>
+    <p class="lock">🔒 Read on your phone only. Nothing is uploaded, nothing is stored.</p>
+    <button id="demo" class="ghost">Try with sample data</button>
+    <section class="how">
+      <h3>How to get your statement</h3>
+      <details><summary>PhonePe</summary><p>Open PhonePe → <b>History</b> → tap <b>Download statement</b> (top right) → pick the months → it comes to your email as a PDF. The PDF password is usually in that email.</p></details>
+      <details><summary>Your bank (SBI, HDFC, ICICI, Axis…)</summary><p>Net banking or the bank app → <b>Accounts</b> → <b>Statement</b> → choose the dates → download as <b>Excel/CSV</b> (best) or PDF.</p></details>
+      <details><summary>Google Pay / Paytm</summary><p>UPI apps pay from your bank account, so your <b>bank statement</b> already has these payments. Use that.</p></details>
+    </section>
+    <section class="feat">
+      <div>📅<b>Every month</b><span>how much, and on what</span></div>
+      <div>📊<b>Whole year</b><span>food, shopping, travel, bills…</span></div>
+      <div>🪙<b>Small spends</b><span>your ₹20–₹100 payments, added up</span></div>
+      <div>💰<b>Your plan</b><span>what to cut, how much you save</span></div>
+    </section>
+    <p class="foot">Made by <a href="https://www.instagram.com/maddiee.makess/">@maddiee.makess</a> · Free · Not financial advice</p>
+  </div>
+  <div id="result" hidden>
+    <header class="top"><span class="logo">🧾 Wrapped</span><button id="again" class="small-btn">New statement</button></header>
+    <div id="result-body"></div>
+  </div>
 </main>
 </body>
 </html>
