@@ -42,3 +42,15 @@ details summary{cursor:pointer;font-weight:700;padding:6px 0}details p{color:var
 canvas{width:100%;height:auto;border-radius:14px;display:block}
 .btns{display:flex;gap:10px;margin-top:10px}.btns button{flex:1;border:0;border-radius:12px;padding:12px;font-weight:800;background:var(--acc);color:#1a1206}.btns .alt{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
 .list{max-height:420px;overflow:auto}.tx{display:grid;grid-template-columns:56px 1fr auto;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:14px}.tx span:first-child{color:var(--mute)}
+.primary{display:block;width:100%;margin:6px 0 4px;border:0;border-radius:14px;padding:14px;font-weight:800;font-size:17px;background:var(--acc);color:#1a1206}
+.demo-note{background:rgba(255,197,61,.12);border:1px solid rgba(255,197,61,.5);border-radius:12px;padding:8px 12px;margin:10px 0 0;font-size:14px}
+.track h4{margin:14px 0 8px}.alerts p{margin:0 0 8px;padding:8px 10px;border-radius:10px;background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.45);font-size:14px}
+.lim{margin:10px 0}.lim-h{display:flex;justify-content:space-between;font-size:14px}.lim-t{height:12px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:4px 0}
+.lim-t i{display:block;height:100%;background:#5a7cff;border-radius:99px}.lim.ok .lim-t i{background:var(--grn)}.lim.warn .lim-t i{background:var(--acc)}.lim.over .lim-t i{background:var(--red)}
+.lim-f{display:flex;justify-content:space-between;font-size:13px;color:var(--mute)}.lim.over .lim-f{color:var(--red)}.lim.warn .lim-f{color:var(--acc)}
+.link{background:none;border:0;color:var(--acc);font-weight:700;padding:0;font-size:13px;text-decoration:underline}
+.chipb{background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:99px;padding:4px 10px;font-size:13px;margin:3px 2px}
+.add{border-top:1px solid var(--line);margin-top:12px}.add-row{display:flex;gap:8px;margin-bottom:8px}
+.add input,.add select,.add textarea{flex:1;min-width:0;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:15px}
+.add textarea{width:100%;margin:6px 0}.add button:not(.link){border:0;border-radius:10px;padding:10px 16px;font-weight:800;background:var(--acc);color:#1a1206}
+.pl small{color:var(--mute);font-size:12px}.y{color:var(--acc)!important}

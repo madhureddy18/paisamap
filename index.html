@@ -10,6 +10,8 @@
 <meta name="theme-color" content="#0b0f2a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="vendor/xlsx.full.min.js" defer></script>
 <script type="module" src="assets/app.js"></script>
 </head>
@@ -26,6 +28,7 @@
       <span class="ic">📄</span><b>Upload your statement</b><small>PhonePe PDF or your bank's statement (PDF, Excel or CSV)</small>
     </label>
     <p id="status" class="status"></p>
+    <button id="open" class="primary" hidden>Open my tracker</button>
     <p class="lock">🔒 Read on your phone only. Nothing is uploaded, nothing is stored.</p>
     <button id="demo" class="ghost">Try with sample data</button>
     <section class="how">
@@ -35,10 +38,12 @@
       <details><summary>Google Pay / Paytm</summary><p>UPI apps pay from your bank account, so your <b>bank statement</b> already has these payments. Use that.</p></details>
     </section>
     <section class="feat">
-      <div>📅<b>Every month</b><span>how much, and on what</span></div>
+      <div>📈<b>Every month</b><span>how much, and on what</span></div>
       <div>📊<b>Whole year</b><span>food, shopping, travel, bills…</span></div>
       <div>🪙<b>Small spends</b><span>your ₹20–₹100 payments, added up</span></div>
       <div>💰<b>Your plan</b><span>what to cut, how much you save</span></div>
+      <div>🚦<b>Monthly limits</b><span>warnings at 80% and when you cross it</span></div>
+      <div>🔁<b>Repeats</b><span>subscriptions you forgot to cancel</span></div>
     </section>
     <p class="foot">Made by <a href="https://www.instagram.com/maddiee.makess/">@maddiee.makess</a> · Free · Not financial advice</p>
   </div>

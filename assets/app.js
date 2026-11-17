@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, CATS } from './engine.js';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -7,7 +7,11 @@ const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
-let TX = [], R = null, tags = store.get('pm_tags', {});
+let TX = [], R = null, DEMO = false, tags = store.get('pm_tags', {}), limits = store.get('pm_limits', { total: 0, cats: {} });
+const saveTx = () => { if (!DEMO) store.set('pm_tx', TX.map(t => ({ ...t, date: +t.date }))); };
+const loadTx = () => store.get('pm_tx', []).map(t => ({ ...t, date: new Date(t.date) }));
+const keyOf = t => +t.date + '|' + t.amount + '|' + t.dir + '|' + String(t.desc).slice(0, 40);
+function addTx(list) { const seen = new Set(TX.map(keyOf)); for (const t of list) { const k = keyOf(t); if (!seen.has(k)) { seen.add(k); TX.push(t); } } saveTx(); }
 
 // ---------------------------------------------------------------- reading files (all in the browser)
 async function readPdf(file) {
@@ -38,15 +42,15 @@ async function handleFiles(files) {
     try { got = got.concat(/\.pdf$/i.test(f.name) || f.type === 'application/pdf' ? await readPdf(f) : await readSheet(f)); }
     catch (e) { console.warn(e); status(`Couldn't read "${f.name}". Try the Excel/CSV version of your statement.`, true); }
   }
-  const seen = new Set();
-  TX = TX.concat(got).filter(t => { const k = +t.date + '|' + t.amount + '|' + t.dir + '|' + t.desc.slice(0, 40); if (seen.has(k)) return false; seen.add(k); return true; });
+  if (DEMO) { TX = []; DEMO = false; }
+  addTx(got);
   if (!TX.some(t => t.dir === 'out')) { status('No payments found in that file. Try your bank\'s Excel/CSV statement, or send us the format on Instagram @maddiee.makess.', true); return; }
   status(''); run();
 }
 function status(msg, bad) { const el = $('#status'); el.textContent = msg; el.className = bad ? 'status bad' : 'status'; }
 
 // ---------------------------------------------------------------- render
-function run() { R = analyse(TX, tags); if (!R) return; render(); $('#home').hidden = true; $('#result').hidden = false; window.scrollTo(0, 0); }
+function run() { R = analyse(TX, tags); if (!R) { $('#home').hidden = false; $('#result').hidden = true; return; } render(); $('#home').hidden = true; $('#result').hidden = false; window.scrollTo(0, 0); }
 function bars(items, max, fmt = short) {
   return items.map(([label, v, col, sub]) => `<div class="hb"><div class="hb-l">${label}</div><div class="hb-t"><i style="width:${Math.max(2, v / max * 100)}%;background:${col}"></i></div><div class="hb-v">${fmt(v)}${sub ? `<small>${sub}</small>` : ''}</div></div>`).join('');
 }
@@ -54,13 +58,15 @@ function render() {
   const r = R, period = `${MN[r.first.getMonth()]} ${r.first.getFullYear()} – ${MN[r.last.getMonth()]} ${r.last.getFullYear()}`;
   const maxM = Math.max(...r.months.map(m => m.total)), topM = r.months.reduce((a, m) => m.total > a.total ? m : a, r.months[0]);
   $('#result-body').innerHTML = `
+  ${DEMO ? '<p class="demo-note">👀 This is sample data. Upload your statement to see yours.</p>' : ''}
+  ${tracker()}
   <section class="card hero">
     <p class="kicker">${period} · ${r.txns.length.toLocaleString('en-IN')} payments</p>
     <h2>You spent <b>${inr(r.spent)}</b></h2>
     <div class="row3"><div><span>per month</span><b>${short(r.avgMonth)}</b></div><div><span>small spends</span><b>${short(r.small.total)}</b></div><div><span>can save / yr</span><b class="g">${short(r.saveYear)}</b></div></div>
   </section>
 
-  <section class="card"><h3>📅 Every month</h3>
+  <section class="card"><h3>📈 Every month</h3>
     <div class="cols">${r.months.map(m => `<div class="col${m === topM ? ' hi' : ''}"><em>${short(m.total)}</em><i style="height:${Math.max(3, m.total / maxM * 100)}%"></i><span>${MN[m.m][0]}${r.months.length > 12 ? '' : ''}</span></div>`).join('')}</div>
     <p class="note">Highest: <b>${MN[topM.m]} ${topM.y}</b> (${inr(topM.total)})</p>
     ${r.months.length >= 2 ? (() => { const a = r.months[r.months.length - 2], b = r.months[r.months.length - 1], d = b.total - a.total; return `<p class="note">${MN[b.m]} vs ${MN[a.m]}: <b class="${d > 0 ? 'r' : 'g'}">${d > 0 ? '↑' : '↓'} ${inr(Math.abs(d))}</b>${r.last.getDate() < 25 ? ' (this month isn\'t over yet)' : ''}</p>`; })() : ''}
@@ -82,6 +88,11 @@ function render() {
       <select data-name="${esc(p.name.toLowerCase())}">${Object.entries(CATS).map(([k, c]) => `<option value="${k}"${k === p.cat ? ' selected' : ''}>${c.emoji} ${c.label}</option>`).join('')}</select></div>`).join('')}
   </section>
 
+  ${R.recurring.length ? `<section class="card"><h3>🔁 Repeats & subscriptions</h3>
+    <p class="note">Payments that come back every month. Cancel what you don't use.</p>
+    ${R.recurring.map(x => `<div class="pl"><span>${CATS[x.cat].emoji} ${esc(x.name)}<small> · ${x.months} months · ~${inr(x.avg)}/mo</small></span><b class="y">${inr(x.year)}/yr</b></div>`).join('')}
+  </section>` : ''}
+
   <section class="card"><h3>⚖️ Fixed vs flexible</h3>
     <div class="split"><i style="width:${r.fixed / r.spent * 100}%"></i></div>
     <div class="row2"><div><span>Fixed (rent, bills, subscriptions…)</span><b>${inr(r.fixed)}</b></div><div><span>Flexible (food, shopping, travel…)</span><b>${inr(r.flexible)}</b></div></div>
@@ -102,9 +113,11 @@ function render() {
 
   <details class="card"><summary>All payments (${r.txns.length})</summary>
     <div class="list">${r.txns.slice().sort((a, b) => b.date - a.date).slice(0, 400).map(t => `<div class="tx"><span>${t.date.getDate()} ${MN[t.date.getMonth()]}</span><span>${CATS[t.cat].emoji} ${esc(t.payee)}</span><b>${inr(t.amount)}</b></div>`).join('')}</div></details>
+  <p class="foot"><button id="wipe" class="link">Delete my data from this phone</button></p>
   <p class="foot">Read on your phone only. Nothing was uploaded. Categories are a best guess from payment names. Not financial advice.</p>`;
   document.querySelectorAll('.reg select').forEach(s => s.onchange = () => { tags[s.dataset.name] = s.value; store.set('pm_tags', tags); run(); });
-  drawCard(); $('#dl').onclick = download; $('#sh').onclick = share;
+  drawCard(); $('#dl').onclick = download; $('#sh').onclick = share; wireTracker();
+  $('#wipe').onclick = () => { if (!confirm('Delete all your payments, labels and limits from this phone?')) return; ['pm_tx', 'pm_tags', 'pm_limits'].forEach(k => localStorage.removeItem(k)); TX = []; tags = {}; limits = { total: 0, cats: {} }; R = null; $('#result').hidden = true; $('#home').hidden = false; updateHome(); };
 }
 
 // ---------------------------------------------------------------- share card
@@ -129,8 +142,80 @@ async function share() {
 
 // ---------------------------------------------------------------- wiring
 $('#file').onchange = e => { if (e.target.files.length) handleFiles([...e.target.files]); e.target.value = ''; };
-$('#demo').onclick = () => { TX = sampleTxns(); run(); };
-$('#again').onclick = () => { TX = []; R = null; $('#result').hidden = true; $('#home').hidden = false; window.scrollTo(0, 0); };
+$('#demo').onclick = () => { DEMO = true; TX = sampleTxns(); run(); };
+$('#again').onclick = () => { if (DEMO) { TX = loadTx(); DEMO = false; } $('#result').hidden = true; $('#home').hidden = false; updateHome(); window.scrollTo(0, 0); };
 const drop = $('#drop'); ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('on'); }));
 ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('on'); }));
 drop.addEventListener('drop', e => { if (e.dataTransfer.files.length) handleFiles([...e.dataTransfer.files]); });
+
+// ---------------------------------------------------------------- tracker: this month, limits, quick add, paste a payment
+function monthNow() {
+  const now = R && !DEMO ? new Date() : (R ? R.last : new Date());
+  const y = now.getFullYear(), m = now.getMonth(), list = R.txns.filter(t => t.date.getFullYear() === y && t.date.getMonth() === m);
+  const cats = {}; let total = 0; list.forEach(t => { total += t.amount; cats[t.cat] = (cats[t.cat] || 0) + t.amount; });
+  const days = new Date(y, m + 1, 0).getDate(), day = DEMO ? days : Math.min(days, now.getDate());
+  return { y, m, list, cats, total, days, day };
+}
+function meter(label, used, lim, key) {
+  const p = lim ? used / lim : 0, cls = !lim ? '' : p >= 1 ? 'over' : p >= 0.8 ? 'warn' : 'ok';
+  return `<div class="lim ${cls}"><div class="lim-h"><span>${label}</span><span><b>${inr(used)}</b>${lim ? ` / ${inr(lim)}` : ''}</span></div>
+    <div class="lim-t"><i style="width:${Math.min(100, p * 100)}%"></i></div>
+    <div class="lim-f">${lim ? (p >= 1 ? `⛔ Over by ${inr(used - lim)}` : p >= 0.8 ? `⚠️ ${Math.round(p * 100)}% used, ${inr(lim - used)} left` : `${inr(lim - used)} left`) : ''}
+    <button class="link setlim" data-k="${key}">${lim ? 'change limit' : 'set a limit'}</button></div></div>`;
+}
+function tracker() {
+  const M = monthNow(), L = limits, catKeys = Object.keys(L.cats).filter(k => L.cats[k] > 0);
+  const top = Object.entries(M.cats).sort((a, b) => b[1] - a[1]).map(([k]) => k).filter(k => !catKeys.includes(k)).slice(0, 3);
+  const pace = M.day ? M.total / M.day * M.days : 0;
+  const alerts = [];
+  if (L.total && M.total >= L.total) alerts.push(`⛔ You've crossed your ${MN[M.m]} limit by ${inr(M.total - L.total)}.`);
+  else if (L.total && M.total >= L.total * 0.8) alerts.push(`⚠️ ${Math.round(M.total / L.total * 100)}% of your ${MN[M.m]} limit is used. ${inr(L.total - M.total)} left for ${M.days - M.day} days.`);
+  else if (L.total && pace > L.total && M.day < M.days) alerts.push(`📈 At this speed you'll spend about ${inr(pace)} this month, more than your ${inr(L.total)} limit.`);
+  catKeys.forEach(k => { const u = M.cats[k] || 0; if (u >= L.cats[k]) alerts.push(`⛔ ${CATS[k].emoji} ${CATS[k].label}: over limit by ${inr(u - L.cats[k])}.`); else if (u >= L.cats[k] * 0.8) alerts.push(`⚠️ ${CATS[k].emoji} ${CATS[k].label}: ${Math.round(u / L.cats[k] * 100)}% used.`); });
+  return `<section class="card track"><h3>📌 ${MN[M.m]} ${M.y} so far</h3>
+    ${alerts.length ? `<div class="alerts">${alerts.map(a => `<p>${a}</p>`).join('')}</div>` : ''}
+    ${meter('Total this month', M.total, L.total, 'total')}
+    ${catKeys.map(k => meter(`${CATS[k].emoji} ${CATS[k].label}`, M.cats[k] || 0, L.cats[k], k)).join('')}
+    ${top.length ? `<p class="note">Set a limit for: ${top.map(k => `<button class="chipb setlim" data-k="${k}">${CATS[k].emoji} ${CATS[k].label}</button>`).join(' ')}</p>` : ''}
+    <div class="add">
+      <h4>➕ Add a payment</h4>
+      <div class="add-row"><input id="qa-amt" type="number" inputmode="decimal" placeholder="₹ amount" min="1"><input id="qa-what" placeholder="what / who (optional)"></div>
+      <div class="add-row"><select id="qa-cat">${Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.emoji} ${c.label}</option>`).join('')}</select><button id="qa-go">Add</button></div>
+      <details><summary>📋 Paste a payment SMS or UPI notification</summary>
+        <textarea id="qa-sms" rows="3" placeholder="e.g. Rs.250.00 debited from A/c XX1234 to VPA swiggy@icici…"></textarea><button id="qa-sms-go">Add from message</button>
+        <p class="note">On Android, install this app (browser menu → Add to Home screen), then use <b>Share → Wrapped</b> on any bank SMS.</p></details>
+      <p id="qa-msg" class="note"></p>
+    </div></section>`;
+}
+function wireTracker() {
+  document.querySelectorAll('.setlim').forEach(b => b.onclick = () => {
+    const k = b.dataset.k, cur = k === 'total' ? limits.total : limits.cats[k] || 0, name = k === 'total' ? 'the whole month' : CATS[k].label;
+    const avg = k === 'total' ? R.avgMonth : (R.cats[k] ? R.cats[k].total / R.nMonths : 0);
+    const v = prompt(`Monthly limit for ${name} (₹). You usually spend about ${inr(avg)}. Enter 0 to remove.`, cur || Math.round(avg * 0.9 / 100) * 100);
+    if (v === null) return; const n = Math.max(0, Math.round(+String(v).replace(/[^\d.]/g, '') || 0));
+    if (k === 'total') limits.total = n; else limits.cats[k] = n; store.set('pm_limits', limits); render();
+  });
+  const msg = t => { $('#qa-msg').textContent = t; };
+  $('#qa-go').onclick = () => {
+    const a = +$('#qa-amt').value; if (!(a > 0)) return msg('Enter an amount.');
+    const what = $('#qa-what').value.trim() || CATS[$('#qa-cat').value].label, d = new Date();
+    if (DEMO) { TX = loadTx(); DEMO = false; }
+    addTx([{ date: new Date(d.getFullYear(), d.getMonth(), d.getDate()), desc: 'Added: ' + what + ' #' + Date.now(), payee: what, fixedCat: $('#qa-cat').value, amount: a, dir: 'out', src: 'manual' }]); run();
+  };
+  $('#qa-sms-go').onclick = () => { addFromMessage($('#qa-sms').value); };
+}
+function addFromMessage(text) {
+  const t = parseMessage(text);
+  if (!t) { const el = $('#qa-msg'); if (el) el.textContent = "Couldn't find an amount in that message."; else status("Couldn't find an amount in that message.", true); return; }
+  if (DEMO) { TX = loadTx(); DEMO = false; }
+  addTx([t]); run();
+  setTimeout(() => { const el = $('#qa-msg'); if (el) el.textContent = `Added ${inr(t.amount)} ${t.dir === 'in' ? 'received from' : 'to'} ${t.payee} ✓`; }, 0);
+}
+function updateHome() { const n = loadTx().length; const b = $('#open'); b.hidden = !n; b.textContent = `Open my tracker (${n} payments saved)`; }
+
+// ---------------------------------------------------------------- start: saved data, share-target, installable app
+$('#open').onclick = () => { DEMO = false; TX = loadTx(); run(); };
+updateHome();
+const shared = new URLSearchParams(location.search).get('text');
+if (shared) { history.replaceState(null, '', location.pathname); TX = loadTx(); addFromMessage(shared); }
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

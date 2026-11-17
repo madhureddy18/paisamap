@@ -175,9 +175,9 @@ export function fromText(lines) {   // PDF text lines (PhonePe, Google Pay, Payt
 // ---------------------------------------------------------------- the summary
 const SELF = /self|own account|to self|my account|wallet load|add money|sweep|transfer to fd/i;
 export function analyse(txns, tags = {}) {
-  const all = txns.map(t => ({ ...t, payee: payeeOf(t.desc) })).filter(t => t.amount > 0);
+  const all = txns.map(t => ({ ...t, payee: t.payee || payeeOf(t.desc) })).filter(t => t.amount > 0);
   const outT = all.filter(t => t.dir === 'out' && !SELF.test(t.desc));
-  outT.forEach(t => { t.cat = categorise(t, tags); });
+  outT.forEach(t => { t.cat = t.fixedCat || categorise(t, tags); });
   const inT = all.filter(t => t.dir === 'in');
   if (!outT.length) return null;
   const dates = outT.map(t => +t.date), first = new Date(Math.min(...dates)), last = new Date(Math.max(...dates));
@@ -200,7 +200,8 @@ export function analyse(txns, tags = {}) {
   const avgMonth = spent / nMonths;
   const top = Object.entries(cats).sort((a, b) => b[1].total - a[1].total);
   const late = outT.filter(t => /\b(1[0-1]|0?[0-4]):\d{2}\s?pm|\b(0?[0-4]):\d{2}\s?am/i.test(t.desc)).length;
-  return { txns: outT, inTotal: inT.reduce((a, t) => a + t.amount, 0), spent, first, last, nMonths, months, cats, top, regulars, small: { n: small.length, total: smallTotal, perYear: perYear(smallTotal) }, fixed, flexible: spent - fixed, plan, saveYear, avgMonth, budget: Math.max(0, avgMonth - saveYear / 12), perYear, personality: personality(cats, spent, small.length, outT.length) };
+  const recurring = findRecurring(outT);
+  return { recurring, txns: outT, inTotal: inT.reduce((a, t) => a + t.amount, 0), spent, first, last, nMonths, months, cats, top, regulars, small: { n: small.length, total: smallTotal, perYear: perYear(smallTotal) }, fixed, flexible: spent - fixed, plan, saveYear, avgMonth, budget: Math.max(0, avgMonth - saveYear / 12), perYear, personality: personality(cats, spent, small.length, outT.length) };
 }
 function personality(cats, spent, nSmall, n) {
   const share = k => (cats[k] ? cats[k].total / spent : 0);
@@ -243,4 +244,38 @@ export function sampleTxns() {
     if (day === 10) add(d, 'Paid to Groww SIP', 1000);
   }
   return t;
+}
+
+// ---------------------------------------------------------------- repeats ("I'll cancel later" subscriptions, EMIs, rent)
+function findRecurring(outT) {
+  const by = {};
+  for (const t of outT) { if (t.amount < 49) continue; const k = t.payee.toLowerCase(); (by[k] = by[k] || []).push(t); }
+  const out = [];
+  for (const list of Object.values(by)) {
+    const months = new Map(); list.forEach(t => { const k = t.date.getFullYear() * 12 + t.date.getMonth(); if (!months.has(k)) months.set(k, []); months.get(k).push(t.amount); });
+    if (months.size < 3) continue;
+    const per = [...months.values()].map(a => a.reduce((x, y) => x + y, 0)), avg = per.reduce((a, b) => a + b, 0) / per.length;
+    const steady = per.filter(v => Math.abs(v - avg) <= avg * 0.25).length / per.length;
+    const perMonthCount = list.length / months.size;
+    if (steady >= 0.7 && perMonthCount <= 2.5) out.push({ name: list[0].payee, cat: list[0].cat, avg, months: months.size, year: avg * 12, last: list[list.length - 1].date });
+  }
+  return out.sort((a, b) => b.year - a.year).slice(0, 12);
+}
+
+// ---------------------------------------------------------------- one payment from a pasted bank SMS / UPI notification
+export function parseMessage(text) {
+  const s = String(text || '').replace(/\s+/g, ' ').trim(); if (!s) return null;
+  const m = s.match(/(?:₹|\brs\.?|\binr)\s?([\d,]+(?:\.\d{1,2})?)/i) || s.match(/\b(\d[\d,]*\.\d{2})\b/);
+  if (!m) return null;
+  const amount = parseFloat(m[1].replace(/,/g, '')); if (!(amount > 0)) return null;
+  const isIn = /credited|received|refund|cashback|deposited/i.test(s) && !/debited|paid|sent|spent|purchase|withdrawn/i.test(s);
+  let payee = '';
+  const STOP = "(?=\\s+(?:on|via|ref|upi|using|from|avl|bal|for|if not|not you|is|has)\\b|[.,;]|$)";
+  const tries = /card|spent/i.test(s) ? ['at', 'to vpa', 'to'] : ['paid to', 'sent to', 'payment to', 'to vpa', 'trf to', 'transfer to', 'to', 'at', 'by'];
+  for (const w of tries) { const pm = s.match(new RegExp('\\b' + w + '\\s+([A-Za-z0-9][A-Za-z0-9 .&\'@_\\-]{1,40}?)' + STOP, 'i')); if (pm && !/^(your|a\/c|ac|account)\b/i.test(pm[1])) { payee = pm[1]; break; } }
+  if (/@/.test(payee)) payee = payee.split('@')[0];
+  if (!payee) { const v = s.match(/([a-z0-9.\-_]+)@[a-z]+/i); if (v) payee = v[1]; }
+  const date = findDate(s) || new Date();
+  const name = payee ? payeeOf('Paid to ' + payee) : payeeOf(s);
+  return { date: new Date(date.getFullYear(), date.getMonth(), date.getDate()), desc: s.slice(0, 200), payee: name, amount, dir: isIn ? 'in' : 'out', src: 'sms' };
 }
