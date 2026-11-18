@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=11';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=12';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -186,29 +186,29 @@ let design = 'sum';
 function wrapText(x, text, maxW) { const words = text.split(' '), out = []; let line = ''; for (const w of words) { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
 function drawCard() {
   const c = $('#share'), x = c.getContext('2d'), r = R, F = '"Bricolage", system-ui, sans-serif';
-  const t = (s, X, Y, size, col = '#fff', w = 800, al = 'center') => { x.font = `${w} ${size}px ${F}`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
+  const t = (s, X, Y, size, col = '#10261d', w = 800, al = 'center') => { x.font = `${w} ${size}px ${F}`; x.fillStyle = col; x.textAlign = al; x.textBaseline = 'middle'; x.fillText(s, X, Y); };
   const bg = (a, b) => { const g = x.createLinearGradient(0, 0, 1080, 1920); g.addColorStop(0, a); g.addColorStop(1, b); x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
-    x.strokeStyle = 'rgba(159,182,198,0.10)'; x.lineWidth = 2; for (let i = 0; i <= 1080; i += 72) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 1920); x.stroke(); } for (let j = 0; j <= 1920; j += 72) { x.beginPath(); x.moveTo(0, j); x.lineTo(1080, j); x.stroke(); }
-    x.setLineDash([8, 30]); x.lineCap = 'round'; x.strokeStyle = 'rgba(244,180,0,0.55)'; x.lineWidth = 10; x.beginPath(); x.moveTo(-40, 1560); x.bezierCurveTo(260, 1380, 420, 1720, 640, 1560); x.bezierCurveTo(820, 1430, 900, 1600, 1120, 1480); x.stroke(); x.setLineDash([]); };
-  const head = sub => { t('📍 PaisaMap', 540, 150, 60); t(sub, 540, 225, 38, 'rgba(232,241,242,0.75)', 600); };
-  const foot = () => { t('find yours at paisamap.online', 540, 1760, 44, '#fff', 800); t('@maddiee.makess', 540, 1830, 34, 'rgba(232,241,242,0.75)', 600); };
+    x.strokeStyle = 'rgba(16,38,29,0.06)'; x.lineWidth = 2; for (let i = 0; i <= 1080; i += 72) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i, 1920); x.stroke(); } for (let j = 0; j <= 1920; j += 72) { x.beginPath(); x.moveTo(0, j); x.lineTo(1080, j); x.stroke(); }
+    x.setLineDash([8, 30]); x.lineCap = 'round'; x.strokeStyle = 'rgba(11,143,104,0.45)'; x.lineWidth = 10; x.beginPath(); x.moveTo(-40, 1560); x.bezierCurveTo(260, 1380, 420, 1720, 640, 1560); x.bezierCurveTo(820, 1430, 900, 1600, 1120, 1480); x.stroke(); x.setLineDash([]); };
+  const head = sub => { t('📍 PaisaMap', 540, 150, 60); t(sub, 540, 225, 38, 'rgba(16,38,29,0.6)', 600); };
+  const foot = () => { t('find yours at paisamap.online', 540, 1760, 44, '#0b8f68', 800); t('@maddiee.makess', 540, 1830, 34, 'rgba(16,38,29,0.6)', 600); };
   if (design === 'sum') {
-    bg('#0e2a47', '#1f6f6b'); head(`my money, ${r.first.getMonth() === r.last.getMonth() ? '' : MN[r.first.getMonth()] + '–'}${MN[r.last.getMonth()]} ${r.last.getFullYear()}`);
-    x.fillStyle = 'rgba(8,20,40,0.55)'; x.beginPath(); x.roundRect(90, 310, 900, 1100, 50); x.fill();
-    t('I spent', 540, 410, 44, 'rgba(232,241,242,0.75)', 600); t(inr(r.spent), 540, 515, 124, '#f4b400', 900);
+    bg('#f2f7f3', '#c9ecd9'); head(`my money, ${r.first.getMonth() === r.last.getMonth() ? '' : MN[r.first.getMonth()] + '–'}${MN[r.last.getMonth()]} ${r.last.getFullYear()}`);
+    x.fillStyle = 'rgba(255,255,255,0.85)'; x.beginPath(); x.roundRect(90, 310, 900, 1100, 50); x.fill();
+    t('I spent', 540, 410, 44, 'rgba(16,38,29,0.6)', 600); t(inr(r.spent), 540, 515, 124, '#0b8f68', 900);
     [['per month', short(r.avgMonth)], ['small spends', short(r.small.total)], ['top category', `${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`], ['can save', short(r.saveYear) + ' / yr']]
-      .forEach(([a, b], i) => { const Y = 690 + i * 150; t(a, 160, Y, 40, 'rgba(232,241,242,0.7)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#4fd1a5' : '#fff', 800, 'right'); x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(160, Y + 60, 760, 2); });
-    t(`${r.personality.emoji} ${r.personality.name}`, 540, 1320, 54, '#fff', 900);
+      .forEach(([a, b], i) => { const Y = 690 + i * 150; t(a, 160, Y, 40, 'rgba(16,38,29,0.6)', 600, 'left'); t(b, 920, Y, 52, i === 3 ? '#0b8f68' : '#10261d', 800, 'right'); x.fillStyle = 'rgba(16,38,29,0.08)'; x.fillRect(160, Y + 60, 760, 2); });
+    t(`${r.personality.emoji} ${r.personality.name}`, 540, 1320, 54, '#10261d', 900);
   } else if (design === 'roast') {
-    bg('#3b1530', '#0e2a47'); head('roasted my own spending');
+    bg('#fff1f1', '#e3f3ea'); head('roasted my own spending');
     t('🔥', 540, 400, 150); let Y = 560;
-    r.roast.filter(l => !/^You paid /.test(l)).slice(0, 3).forEach(line => { x.font = `700 50px ${F}`; const ls = wrapText(x, line, 820); x.fillStyle = 'rgba(255,92,138,0.14)'; x.beginPath(); x.roundRect(110, Y - 50, 860, ls.length * 66 + 50, 34); x.fill();
-      ls.forEach((l, k) => t(l, 540, Y + 6 + k * 66, 50, '#fff', 700)); Y += ls.length * 66 + 90; });
+    r.roast.filter(l => !/^You paid /.test(l)).slice(0, 3).forEach(line => { x.font = `700 50px ${F}`; const ls = wrapText(x, line, 820); x.fillStyle = 'rgba(229,72,77,0.10)'; x.beginPath(); x.roundRect(110, Y - 50, 860, ls.length * 66 + 50, 34); x.fill();
+      ls.forEach((l, k) => t(l, 540, Y + 6 + k * 66, 50, '#10261d', 700)); Y += ls.length * 66 + 90; });
   } else {
-    bg('#17436b', '#3b2a6b'); head('my money personality');
-    t(r.personality.emoji, 540, 640, 300); t(r.personality.name, 540, 960, 96, '#f4b400', 900);
-    x.font = `600 46px ${F}`; wrapText(x, r.personality.line, 820).forEach((l, k) => t(l, 540, 1070 + k * 60, 46, 'rgba(232,241,242,0.85)', 600));
-    t(`top spend: ${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`, 540, 1300, 44, '#fff', 700);
+    bg('#e6f6ee', '#bfe6d2'); head('my money personality');
+    t(r.personality.emoji, 540, 640, 300); t(r.personality.name, 540, 960, 96, '#0b8f68', 900);
+    x.font = `600 46px ${F}`; wrapText(x, r.personality.line, 820).forEach((l, k) => t(l, 540, 1070 + k * 60, 46, 'rgba(16,38,29,0.75)', 600));
+    t(`top spend: ${CATS[r.top[0][0]].emoji} ${CATS[r.top[0][0]].label}`, 540, 1300, 44, '#10261d', 700);
   }
   foot();
 }

@@ -1,5 +1,5 @@
 // Network first (so updates show up), cache as offline fallback. Statements never touch the network.
-const C = 'pm-v11';
+const C = 'pm-v12';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', e => {
