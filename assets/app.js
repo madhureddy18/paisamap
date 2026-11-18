@@ -1,4 +1,4 @@
-import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=10';
+import { fromRows, fromText, analyse, sampleTxns, parseMessage, CATS } from './engine.js?v=11';
 
 const $ = s => document.querySelector(s);
 const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -136,12 +136,49 @@ function render() {
 
   <details class="card"><summary>All payments (${r.txns.length})</summary>
     <div class="list">${r.txns.slice().sort((a, b) => b.date - a.date).slice(0, 400).map(t => `<div class="tx"><span>${t.date.getDate()} ${MN[t.date.getMonth()]}</span><span>${CATS[t.cat].emoji} ${esc(t.payee)}</span><b>${inr(t.amount)}</b></div>`).join('')}</div></details>
+  ${reviewBox()}
   <p class="foot"><button id="wipe" class="link">Reset my limits & labels</button></p>
   <p class="foot">Read on your phone only. Nothing was uploaded. Categories are a best guess from payment names. Not financial advice.</p>`;
   document.querySelectorAll('.reg select').forEach(s => s.onchange = () => { tags[s.dataset.name] = s.value; store.set('pm_tags', tags); run(); });
-  drawCard(); $('#dl').onclick = download; $('#sh').onclick = share; wireTracker();
+  drawCard(); $('#dl').onclick = download; $('#sh').onclick = share; wireTracker(); wireReview();
   document.querySelectorAll('.seg button').forEach(b => b.onclick = () => { design = b.dataset.d; document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b)); drawCard(); });
   $('#wipe').onclick = () => { if (!confirm('Reset your monthly limits and shop labels on this phone?')) return; ['pm_tags', 'pm_limits'].forEach(k => localStorage.removeItem(k)); TX = []; tags = {}; limits = { total: 0, cats: {} }; R = null; $('#result').hidden = true; $('#home').hidden = false; };
+}
+
+// ---------------------------------------------------------------- review box (answers go to Maddyy's private Google Form; nothing else is attached)
+const FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSdRw7Pp0E6KZqeBJelWcVUF5xPHLQGTbdFiT1EQYhIY9Cjj_A/formResponse';
+const F_STARS = 'entry.690049317', F_TEXT = 'entry.2040580522', F_FROM = 'entry.770362848';
+let reviewSent = false;
+function reviewBox() {
+  if (reviewSent) return `<section class="card review done"><h3>💛 Thanks for the review!</h3><p class="note">We read every one. Your ideas decide what PaisaMap adds next.</p></section>`;
+  return `<section class="card review" id="review"><h3>⭐ Rate PaisaMap</h3>
+    <p class="note">Tell us what to add or fix. We build what you ask for.</p>
+    <div class="stars" role="radiogroup" aria-label="Your rating">${[1, 2, 3, 4, 5].map(n => `<button type="button" role="radio" aria-checked="false" aria-label="${n} star${n > 1 ? 's' : ''}" data-s="${n}">★</button>`).join('')}</div>
+    <p class="rv-word" id="rv-word">&nbsp;</p>
+    <textarea id="rv-text" rows="3" maxlength="1000" placeholder="Anything we should add or fix? (optional)"></textarea>
+    <p class="rv-q">Your statement was from <span>(optional)</span></p>
+    <div class="chips">${['PhonePe', 'Google Pay', 'Paytm', 'Bank', 'Other'].map(c => `<button type="button" data-c="${c}">${c}</button>`).join('')}</div>
+    <button id="rv-send" class="rv-send" disabled>Send review</button>
+    <p class="rv-safe">🔒 Only what you choose here is sent. Your statement stays on your phone.</p></section>`;
+}
+function wireReview() {
+  const box = $('#review'); if (!box) return;
+  let stars = 0, from = '';
+  const words = ['', 'Not great 😕', 'Okay 😐', 'Good 🙂', 'Really good 😄', 'Loved it 😍'];
+  const stBtns = box.querySelectorAll('.stars button');
+  const paint = n => stBtns.forEach((b, i) => { b.classList.toggle('lit', i < n); b.setAttribute('aria-checked', String(i + 1 === stars)); });
+  stBtns.forEach(b => {
+    b.onclick = () => { stars = +b.dataset.s; paint(stars); b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); $('#rv-word').textContent = words[stars]; $('#rv-send').disabled = false; };
+    b.onmouseenter = () => paint(+b.dataset.s); b.onmouseleave = () => paint(stars);
+  });
+  box.querySelectorAll('.chips button').forEach(c => c.onclick = () => { from = from === c.dataset.c ? '' : c.dataset.c; box.querySelectorAll('.chips button').forEach(x => x.classList.toggle('on', x.dataset.c === from)); });
+  $('#rv-send').onclick = async () => {
+    const btn = $('#rv-send'); btn.disabled = true; btn.textContent = 'Sending…';
+    const body = new URLSearchParams({ [F_STARS]: String(stars), [F_TEXT]: $('#rv-text').value.trim(), [F_FROM]: from });
+    try { await fetch(FORM, { method: 'POST', mode: 'no-cors', body }); reviewSent = true; count('review-' + stars);
+      box.classList.add('done'); box.innerHTML = `<h3>💛 Thanks for the review!</h3><p class="note">We read every one. Your ideas decide what PaisaMap adds next.</p>`;
+    } catch { btn.disabled = false; btn.textContent = 'Send review'; status("Couldn't send. Check your internet and try again.", true); }
+  };
 }
 
 // ---------------------------------------------------------------- share card

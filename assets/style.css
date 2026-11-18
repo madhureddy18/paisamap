@@ -117,3 +117,26 @@ canvas{width:100%;height:auto;border-radius:var(--r-md);display:block}
 .seg button.on{background:var(--route);color:var(--sea)}
 .help{border-color:rgba(255,92,138,.45)}.help h3{margin-top:0}.help p{color:var(--fog)}.help label{display:flex;align-items:center;gap:10px;font-weight:700}.help select{flex:1}
 .btnlike{display:flex;align-items:center;justify-content:center;flex:1;border-radius:var(--r-sm);padding:13px;font-weight:800;text-decoration:none;background:var(--sea3);color:var(--mist)}
+
+/* review box */
+.review{border-color:rgba(244,180,0,.35)}
+.stars{display:flex;gap:6px;margin:4px 0 2px}
+.stars button{border:0;background:none;font-size:40px;line-height:1;padding:2px 4px;color:rgba(159,182,198,.28);cursor:pointer;transition:color .2s var(--ease),transform .25s var(--spring)}
+.stars button.lit{color:var(--route)}
+.stars button.pop{animation:starpop .35s var(--spring)}
+@keyframes starpop{0%{transform:scale(1)}45%{transform:scale(1.35) rotate(-8deg)}100%{transform:scale(1)}}
+.stars button:focus-visible,.chips button:focus-visible,.rv-send:focus-visible{outline:2px solid var(--route);outline-offset:2px;border-radius:8px}
+.rv-word{margin:2px 0 12px;color:var(--route);font-weight:700;min-height:1.3em}
+.review textarea{width:100%;box-sizing:border-box;background:var(--sea);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;color:var(--mist);resize:vertical}
+.review textarea:focus{outline:2px solid var(--route);outline-offset:0}
+.rv-q{margin:14px 0 8px;font-weight:700}.rv-q span{color:var(--fog);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:1px solid var(--line);background:var(--sea);color:var(--mist);border-radius:99px;padding:8px 14px;font-weight:600;cursor:pointer;transition:background .2s,color .2s,transform .2s var(--spring)}
+.chips button.on{background:var(--route);color:var(--sea);border-color:var(--route)}
+.chips button:active{transform:scale(.95)}
+.rv-send{display:block;width:100%;margin-top:16px;border:0;border-radius:var(--r-sm);padding:14px;font-weight:800;background:var(--route);color:var(--sea);cursor:pointer;transition:transform .2s var(--spring),opacity .2s}
+.rv-send:disabled{opacity:.4;cursor:default}.rv-send:not(:disabled):active{transform:scale(.97)}
+.rv-safe{margin:10px 0 0;font-size:13px;color:var(--fog)}
+.review.done{text-align:center;animation:fadein .4s var(--ease)}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.stars button.pop,.review.done{animation:none}}
